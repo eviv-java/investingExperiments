@@ -1,9 +1,10 @@
 package io;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -16,7 +17,7 @@ public class FileDataReader implements DataReader {
 
 
     public TreeMap<Date, Double> readStocks() {
-        List<String> lines = readFile("/home/j3v/spxMonthly1913-2021.txt");
+        List<String> lines = readFile("spxMonthly1913-2021.txt");
         TreeMap<Date, Double> result = new TreeMap<>();
         for (String line: lines) {
             String[] parts = line.split("\t");
@@ -35,7 +36,7 @@ public class FileDataReader implements DataReader {
     }
 
     public TreeMap<Date, Double> readInfl() {
-        List<String> lines = readFile("/home/j3v/cpiMonthly1913-2021.txt");
+        List<String> lines = readFile("cpiMonthly1913-2021.txt");
         TreeMap<Date, Double> result = new TreeMap<>();
         for (String line: lines) {
             String[] parts = line.split("\t");
@@ -59,17 +60,27 @@ public class FileDataReader implements DataReader {
     }
 
     private List<String> readFile(String filename) {
-        List<String> result = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                result.add(line);
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        URL resource = classLoader.getResource(filename);
+        File file;
+        if (resource == null) {
+            throw new IllegalArgumentException("file not found! " + filename);
+        } else {
+
+            // failed if files have whitespaces or special characters
+            //return new File(resource.getFile());
+
+            try {
+                file = new File(resource.toURI());
+                return Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return result;
     }
 }
