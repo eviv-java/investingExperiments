@@ -1,4 +1,6 @@
-package broker;
+package ru.j3v.broker;
+
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -6,12 +8,13 @@ import java.util.Date;
 
 import static java.time.temporal.ChronoUnit.MONTHS;
 
+
+@Service
 public class TimeService {
 
     private Date currentDate;
 
-    public TimeService(Date initialDate) {
-        this.currentDate = initialDate;
+    public TimeService() {
     }
 
     public Date getCurrentDate() {

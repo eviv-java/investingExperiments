@@ -1,4 +1,6 @@
-package io;
+package ru.j3v.io;
+
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -9,6 +11,7 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+@Component
 public class FileDataReader implements DataReader {
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.US);

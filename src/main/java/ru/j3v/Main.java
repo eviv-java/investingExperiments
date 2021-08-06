@@ -1,5 +1,7 @@
-import io.DataReader;
-import io.FileDataReader;
+package ru.j3v;
+
+import ru.j3v.io.DataReader;
+import ru.j3v.io.FileDataReader;
 import org.math.plot.Plot2DPanel;
 
 import javax.swing.*;
@@ -9,14 +11,17 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
+import org.springframework.context.*;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import static java.time.temporal.ChronoUnit.MONTHS;
 
 public class Main {
 
-
-
     public static void main(String[] args) {
+
+        ApplicationContext context = new ClassPathXmlApplicationContext("context.xml");
+
         DataReader dr = new FileDataReader();
         TreeMap<Date, Double> spx = dr.readStocks();
         TreeMap<Date, Double> infl = dr.readInfl();
