@@ -1,6 +1,8 @@
 package ru.j3v.broker;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.j3v.io.ParamsProvider;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -13,8 +15,12 @@ import static java.time.temporal.ChronoUnit.MONTHS;
 public class TimeService {
 
     private Date currentDate;
+    private ParamsProvider paramsProvider;
 
-    public TimeService() {
+    @Autowired
+    public TimeService(ParamsProvider paramsProvider) {
+        this.paramsProvider = paramsProvider;
+        this.currentDate = this.paramsProvider.initialDate();
     }
 
     public Date getCurrentDate() {

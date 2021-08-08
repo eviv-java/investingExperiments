@@ -4,9 +4,7 @@ import ru.j3v.io.DataReader;
 import ru.j3v.io.FileDataReader;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ExchangeService {
@@ -33,5 +31,9 @@ public class ExchangeService {
     public double getPrice(String asset) {
         Date date = timeService.getCurrentDate();
         return assetsPrices.get(asset).get(date);
+    }
+
+    public Set<String> assetsSet() {
+        return assetsPrices.keySet();
     }
 }

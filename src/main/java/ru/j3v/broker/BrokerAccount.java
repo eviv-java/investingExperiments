@@ -2,6 +2,7 @@ package ru.j3v.broker;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.j3v.io.ParamsProvider;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -17,28 +18,59 @@ public class BrokerAccount {
     private double brokerCommission;
     private double taxRate;
     private TimeService timeService;
+    private ParamsProvider paramsProvider;
 
     @Autowired
-    public BrokerAccount(ExchangeService exchangeService) {
+    public BrokerAccount(ExchangeService exchangeService,
+                         TimeService timeService,
+                         ParamsProvider paramsProvider) {
         this.exchangeService = exchangeService;
+        this.timeService = timeService;
+        this.paramsProvider = paramsProvider;
         assets = new HashMap<>();
-        assets.put("SPX", new LinkedList<>());
         currencies = new HashMap<>();
+        brokerCommission = paramsProvider.brokerCommission();
+        taxRate = paramsProvider.taxRate();
     }
 
-    public void buyAsset(String asset, double amount) {
+    public void buyAsset(String asset, double amount) throws NoCashException{
         String currency = exchangeService.getCurrency(asset);
         double price = exchangeService.getPrice(asset);
         double cost = price * amount;
         if (currencyAmount(currency) >= cost) {
-            reduceCurrency(currency, cost);
-            assets.get(asset).add(new Chunk(price, amount, timeService.getCurrentDate()));
+            try {
+                double commission = Math.round(cost * brokerCommission) * 0.01;
+                reduceCurrency(currency, cost + commission);
+                Queue<Chunk> assetAccount;
+                if (assets.get(asset) != null) {
+                    assetAccount = assets.get(asset);
+                } else {
+                    assetAccount = new LinkedList<>();
+                    assets.put(asset, assetAccount);
+                }
+                assetAccount.add(new Chunk(price, amount, timeService.getCurrentDate()));
+            } catch (Exception e) {
+                throw new NoCashException(e);
+            }
         }
-
     }
 
-    private void reduceCurrency(String currency, double amount) {
+    public void inputCash(String currency, double amount) {
+        Queue<Chunk> cash;
+        if (currencies.get(currency) != null) {
+            cash = currencies.get(currency);
+        } else {
+            cash = new LinkedList<>();
+            currencies.put(currency, cash);
+        }
+        cash.add(new Chunk(1.0, amount, timeService.getCurrentDate()));
+    }
+
+    private void reduceCurrency(String currency, double amount) throws NoCashException{
         Queue<Chunk> cash = currencies.get(currency);
+        if (cash == null) {
+            throw new NoCashException("There is no " + currency + " account.");
+        }
         while(amount > 0) {
             double currentAmount = cash.peek().getAmount();
             if (currentAmount > amount) {
@@ -52,29 +84,25 @@ public class BrokerAccount {
         }
     }
 
-    public static void main(String[] args) {
-        LocalDate zeroDate = LocalDate.of(1913, 1, 1);
-        Date initialDate =  Date.from(zeroDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        TimeService timeService = new TimeService();
-        ExchangeService exchangeService = new ExchangeService(timeService);
-        BrokerAccount ba = new BrokerAccount(exchangeService);
-        ba.currencies = new HashMap<>();
-        ba.timeService = timeService;
-        Queue<Chunk> currensiesChuks = new LinkedList<>();
-        currensiesChuks.add(new Chunk(1.0, 100.0, initialDate));
-        currensiesChuks.add(new Chunk(1.0, 150.0, initialDate));
-        currensiesChuks.add(new Chunk(1.0, 10.0, initialDate));
-        currensiesChuks.add(new Chunk(1.0, 10.0, initialDate));
-        currensiesChuks.add(new Chunk(1.0, 1000.0, initialDate));
-        ba.currencies.put("USD", currensiesChuks);
-        ba.buyAsset("SPX", 10);
-        ba.buyAsset("SPX", 30);
-    }
-
     public double currencyAmount(String currency) {
         Queue<Chunk> cash = currencies.get(currency);
         double amount = 0.0;
+        if (cash == null) {
+            return 0.0;
+        }
         for (Chunk each: cash) {
+            amount += each.getAmount();
+        }
+        return amount;
+    }
+
+    public double assetAmount(String asset) {
+        Queue<Chunk> stocks = assets.get(asset);
+        double amount = 0.0;
+        if (stocks == null) {
+            return 0.0;
+        }
+        for (Chunk each: stocks) {
             amount += each.getAmount();
         }
         return amount;

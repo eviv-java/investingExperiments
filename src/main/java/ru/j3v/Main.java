@@ -1,5 +1,8 @@
 package ru.j3v;
 
+import ru.j3v.broker.BrokerAccount;
+import ru.j3v.broker.ExchangeService;
+import ru.j3v.broker.NoCashException;
 import ru.j3v.io.DataReader;
 import ru.j3v.io.FileDataReader;
 import org.math.plot.Plot2DPanel;
@@ -18,10 +21,26 @@ import static java.time.temporal.ChronoUnit.MONTHS;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoCashException {
 
         ApplicationContext context = new ClassPathXmlApplicationContext("context.xml");
 
+        BrokerAccount ba = (BrokerAccount)context.getBean("brokerAccount");
+        ExchangeService es = (ExchangeService)context.getBean("exchangeService");
+        System.out.println("USD amount: " + ba.currencyAmount("USD"));
+        System.out.println("SPX amount: " + ba.assetAmount("SPX"));
+        System.out.println("Input $1000...");
+        ba.inputCash("USD", 1000.0);
+        System.out.println("USD amount: " + ba.currencyAmount("USD"));
+        System.out.println("Buy 10 lots of SPX...");
+        if (es.assetsSet().contains("SPX")) {
+            ba.buyAsset("SPX", 10.0);
+        }
+        System.out.println("USD amount: " + ba.currencyAmount("USD"));
+        System.out.println("SPX amount: " + ba.assetAmount("SPX"));
+    }
+
+    private static void drawGraphics() {
         DataReader dr = new FileDataReader();
         TreeMap<Date, Double> spx = dr.readStocks();
         TreeMap<Date, Double> infl = dr.readInfl();
