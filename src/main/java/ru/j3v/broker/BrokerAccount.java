@@ -55,6 +55,58 @@ public class BrokerAccount {
         }
     }
 
+    public void sellAsset(String asset, double amount) throws Exception {
+        String currency = exchangeService.getCurrency(asset);
+        double price = exchangeService.getPrice(asset);
+        if (assetAmount(asset) >= amount) {
+            Queue<Chunk> stocks = assets.get(asset);
+            if (stocks == null) {
+                throw new NoStocksAmount("There are no " + asset + " in your account");
+            }
+            double cashIncome = amount * exchangeService.getPrice(asset);
+            double commission = Math.round(cashIncome * brokerCommission) * 0.01;
+            double taxes = 0.0;
+            while (amount > 0) {
+                Chunk curChunk = stocks.peek();
+                double chunkAmount = curChunk.getAmount();
+                double chunkPrice = curChunk.getPrice();
+                Date chunkDate = curChunk.getDate();
+                if (chunkAmount > amount) {
+                    chunkAmount -= amount;
+                    amount -= amount;
+                    curChunk.setAmount(chunkAmount);
+                    // calculate taxes
+                    taxes += calculateTaxes(asset, curChunk, amount);
+                } else {
+                    amount -= chunkAmount;
+                    stocks.poll();
+                    // calculate taxes
+                    taxes += calculateTaxes(asset, curChunk, amount);
+                }
+            }
+            System.out.println("Sold " + amount + " stocks of " + asset + " for " + cashIncome + currency);
+            System.out.println("Taxes: " + taxes);
+            System.out.println("Commission: " + commission);
+            currencies.get(currency).add(new Chunk(1.0, cashIncome - taxes - commission, new Date()));
+        }
+    }
+
+    private double calculateTaxes(String ticker, Chunk curChunk, double amount) {
+        LocalDate today = timeService.getCurrentDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate buyDate = curChunk.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();;
+        if (!buyDate.plusYears(3).isAfter(today)) {
+            return 0;
+        }
+        double curPrice = exchangeService.getPrice(ticker);
+        double buyPrice = curChunk.getPrice();
+        if (curPrice <= buyPrice) {
+            return 0;
+        } else {
+            double income = (curPrice - buyPrice) * amount;
+            return Math.round(income * taxRate) * 0.01;
+        }
+    }
+
     public void inputCash(String currency, double amount) {
         Queue<Chunk> cash;
         if (currencies.get(currency) != null) {

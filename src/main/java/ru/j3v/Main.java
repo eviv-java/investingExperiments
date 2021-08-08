@@ -3,6 +3,7 @@ package ru.j3v;
 import ru.j3v.broker.BrokerAccount;
 import ru.j3v.broker.ExchangeService;
 import ru.j3v.broker.NoCashException;
+import ru.j3v.broker.TimeService;
 import ru.j3v.io.DataReader;
 import ru.j3v.io.FileDataReader;
 import org.math.plot.Plot2DPanel;
@@ -21,12 +22,13 @@ import static java.time.temporal.ChronoUnit.MONTHS;
 
 public class Main {
 
-    public static void main(String[] args) throws NoCashException {
+    public static void main(String[] args) throws Exception {
 
         ApplicationContext context = new ClassPathXmlApplicationContext("context.xml");
 
         BrokerAccount ba = (BrokerAccount)context.getBean("brokerAccount");
         ExchangeService es = (ExchangeService)context.getBean("exchangeService");
+        TimeService ts = (TimeService)context.getBean("timeService");
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("SPX amount: " + ba.assetAmount("SPX"));
         System.out.println("Input $1000...");
@@ -38,6 +40,12 @@ public class Main {
         }
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("SPX amount: " + ba.assetAmount("SPX"));
+
+        ts.passMonths(35);
+        ba.sellAsset("SPX", 10.0);
+        System.out.println("USD amount: " + ba.currencyAmount("USD"));
+        System.out.println("SPX amount: " + ba.assetAmount("SPX"));
+
     }
 
     private static void drawGraphics() {

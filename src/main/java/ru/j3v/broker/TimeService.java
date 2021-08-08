@@ -31,9 +31,13 @@ public class TimeService {
         this.currentDate = currentDate;
     }
 
-    private Date passOneMonth() {
+    public Date passOneMonth() {
+        return passMonths(1L);
+    }
+
+    public Date passMonths(long m) {
         LocalDate localDate = currentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        currentDate = Date.from(localDate.plusMonths(1L).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        currentDate = Date.from(localDate.plusMonths(m).atStartOfDay(ZoneId.systemDefault()).toInstant());
         return currentDate;
     }
 
