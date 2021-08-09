@@ -10,6 +10,7 @@ import org.math.plot.Plot2DPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -32,15 +33,15 @@ public class Main {
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("SPX amount: " + ba.assetAmount("SPX"));
         System.out.println("Input $1000...");
-        ba.inputCash("USD", 1000.0);
+        ba.inputCash("USD", new BigDecimal(1000));
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("Buy 10 lots of SPX...");
-        ba.buyAsset("SPX", 10.0);
+        ba.buyAsset("SPX", new BigDecimal(10));
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("SPX amount: " + ba.assetAmount("SPX"));
         for (int i = 0; i < 50; i++) {
             System.out.println(ts.getCurrentDate());
-            ba.inputCash("USD", 100.0);
+            ba.inputCash("USD", new BigDecimal(100));
             ba.buyAsset("SPX", ba.amountForCash("SPX", ba.currencyAmount("USD")));
             ts.passMonths(1);
         }
@@ -50,39 +51,39 @@ public class Main {
 
     }
 
-    private static void drawGraphics() {
-        DataReader dr = new FileDataReader();
-        TreeMap<Date, Double> spx = dr.readStocks();
-        TreeMap<Date, Double> infl = dr.readInfl();
-
-        Plot2DPanel plot = new Plot2DPanel();
-
-        double spxX[] = new double[spx.size()];
-        double spxY[] = new double[spx.size()];
-        int i = 0;
-        for (Map.Entry<Date, Double> entry : spx.entrySet()) {
-            spxX[i] = date2Long(entry.getKey());
-            spxY[i] = entry.getValue();
-            i++;
-        }
-        plot.addLinePlot("spx", spxX, spxY);
-
-        double infX[] = new double[infl.size()];
-        double infY[] = new double[infl.size()];
-        i = 0;
-        for (Map.Entry<Date, Double> entry : infl.entrySet()) {
-            infX[i] = date2Long(entry.getKey());
-            infY[i] = entry.getValue();
-            i++;
-        }
-        plot.addLinePlot("infl", infX, infY);
-
-
-        JFrame frame = new JFrame("a plot panel");
-        frame.setContentPane(plot);
-        frame.setVisible(true);
-        frame.setSize(new Dimension(800,600));
-    }
+//    private static void drawGraphics() {
+//        DataReader dr = new FileDataReader();
+//        TreeMap<Date, Double> spx = dr.readStocks();
+//        TreeMap<Date, Double> infl = dr.readInfl();
+//
+//        Plot2DPanel plot = new Plot2DPanel();
+//
+//        double spxX[] = new double[spx.size()];
+//        double spxY[] = new double[spx.size()];
+//        int i = 0;
+//        for (Map.Entry<Date, Double> entry : spx.entrySet()) {
+//            spxX[i] = date2Long(entry.getKey());
+//            spxY[i] = entry.getValue();
+//            i++;
+//        }
+//        plot.addLinePlot("spx", spxX, spxY);
+//
+//        double infX[] = new double[infl.size()];
+//        double infY[] = new double[infl.size()];
+//        i = 0;
+//        for (Map.Entry<Date, Double> entry : infl.entrySet()) {
+//            infX[i] = date2Long(entry.getKey());
+//            infY[i] = entry.getValue();
+//            i++;
+//        }
+//        plot.addLinePlot("infl", infX, infY);
+//
+//
+//        JFrame frame = new JFrame("a plot panel");
+//        frame.setContentPane(plot);
+//        frame.setVisible(true);
+//        frame.setSize(new Dimension(800,600));
+//    }
 
     private static Date nextMonth(Date date) {
         LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();

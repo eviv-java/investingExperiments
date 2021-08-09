@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.j3v.io.ParamsProvider;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -33,14 +35,18 @@ public class BrokerAccount {
         taxRate = paramsProvider.taxRate();
     }
 
-    public void buyAsset(String asset, double amount) throws NoCashException{
+    public void buyAsset(String asset, BigDecimal amount) throws NoCashException{
         String currency = exchangeService.getCurrency(asset);
-        double price = exchangeService.getPrice(asset);
-        double cost = Math.round(price * amount * 100) * 0.01;
-        if (currencyAmount(currency) >= cost) {
+        BigDecimal price = exchangeService.getPrice(asset);
+        BigDecimal cost = price
+                .multiply(amount)
+                .setScale(2, RoundingMode.HALF_UP);
+        if (currencyAmount(currency).compareTo(cost) >= 0) {
             try {
-                double commission = Math.round(cost * brokerCommission) * 0.01;
-                reduceCurrency(currency, cost + commission);
+                BigDecimal commission = cost.multiply(new BigDecimal(brokerCommission))
+                        .multiply(new BigDecimal("0.01"))
+                        .setScale(2, RoundingMode.HALF_UP);
+                reduceCurrency(currency, cost.add(commission));
                 Queue<Chunk> assetAccount;
                 if (assets.get(asset) != null) {
                     assetAccount = assets.get(asset);
@@ -57,55 +63,60 @@ public class BrokerAccount {
         }
     }
 
-    public void sellAsset(String asset, double initialAmount) throws Exception {
+    public void sellAsset(String asset, BigDecimal initialAmount) throws Exception {
         String currency = exchangeService.getCurrency(asset);
-        double amount = initialAmount;
-        if (assetAmount(asset) >= amount) {
+        BigDecimal amount = initialAmount;
+        if (assetAmount(asset).compareTo(amount) >= 0) {
             Queue<Chunk> stocks = assets.get(asset);
             if (stocks == null) {
                 throw new NoStocksAmount("There are no " + asset + " in your account");
             }
-            double cashIncome = Math.round(amount * exchangeService.getPrice(asset) * 100) * 0.01;
-            double commission = Math.round(cashIncome * brokerCommission) * 0.01;
-            double taxes = 0.0;
-            while (amount > 0) {
+            BigDecimal cashIncome = amount.multiply(exchangeService.getPrice(asset));
+            BigDecimal commission = cashIncome
+                    .multiply(new BigDecimal(brokerCommission))
+                    .multiply(new BigDecimal("0.01"))
+                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal taxes = BigDecimal.ZERO;
+            while (amount.compareTo(BigDecimal.ZERO) > 0) {
                 Chunk curChunk = stocks.peek();
-                double chunkAmount = curChunk.getAmount();
-                if (chunkAmount > amount) {
-                    chunkAmount -= amount;
-                    taxes += calculateTaxes(asset, curChunk, amount);
-                    amount -= amount;
+                BigDecimal chunkAmount = curChunk.getAmount();
+                if (chunkAmount.compareTo(amount) > 0) {
+                    chunkAmount = chunkAmount.subtract(amount);
+                    taxes = taxes.add(calculateTaxes(asset, curChunk));
+                    amount = BigDecimal.ZERO;
                     curChunk.setAmount(chunkAmount);
                 } else {
-                    taxes += calculateTaxes(asset, curChunk, chunkAmount);
-                    amount -= chunkAmount;
+                    taxes = taxes.add(calculateTaxes(asset, curChunk));
+                    amount = amount.subtract(chunkAmount);
                     stocks.poll();
                 }
             }
             System.out.println("Sold " + initialAmount + " stocks of " + asset + " for " + cashIncome + " " + currency);
-            System.out.println("Taxes: " + Math.round(taxes * 100) * 0.01);
+            System.out.println("Taxes: " + taxes);
             System.out.println("Commission: " + commission);
-            currencies.get(currency).add(new Chunk(1.0, Math.round((cashIncome - taxes - commission) * 100) * 0.01, new Date()));
+            currencies.get(currency).add(new Chunk(BigDecimal.ONE, cashIncome.subtract(taxes).subtract(commission), new Date()));
         }
     }
 
-    private double calculateTaxes(String ticker, Chunk curChunk, double amount) {
+    private BigDecimal calculateTaxes(String ticker, Chunk curChunk) {
         LocalDate today = timeService.getCurrentDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate buyDate = curChunk.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();;
         if (!buyDate.plusYears(3).isAfter(today)) {
-            return 0;
+            return BigDecimal.ZERO;
         }
-        double curPrice = exchangeService.getPrice(ticker);
-        double buyPrice = curChunk.getPrice();
-        if (curPrice <= buyPrice) {
-            return 0;
+        BigDecimal curPrice = exchangeService.getPrice(ticker);
+        BigDecimal buyPrice = curChunk.getPrice();
+        if (curPrice.compareTo(buyPrice) <= 0) {
+            return BigDecimal.ZERO;
         } else {
-            double income = (curPrice - buyPrice) * amount;
-            return Math.round(income * taxRate) * 0.01;
+            BigDecimal income = (curPrice.subtract(buyPrice)).multiply(curChunk.getAmount());
+            return income.multiply(new BigDecimal(taxRate))
+                    .multiply(new BigDecimal("0.01"))
+                    .setScale(2, RoundingMode.HALF_UP);
         }
     }
 
-    public void inputCash(String currency, double amount) {
+    public void inputCash(String currency, BigDecimal amount) {
         Queue<Chunk> cash;
         if (currencies.get(currency) != null) {
             cash = currencies.get(currency);
@@ -113,81 +124,84 @@ public class BrokerAccount {
             cash = new LinkedList<>();
             currencies.put(currency, cash);
         }
-        cash.add(new Chunk(1.0, amount, timeService.getCurrentDate()));
+        cash.add(new Chunk(BigDecimal.ONE, amount, timeService.getCurrentDate()));
         System.out.println("Added " + amount + " " + currency);
     }
 
-    private void reduceCurrency(String currency, double amount) throws NoCashException{
+    private void reduceCurrency(String currency, BigDecimal amount) throws NoCashException{
         Queue<Chunk> cash = currencies.get(currency);
         if (cash == null) {
             throw new NoCashException("There is no " + currency + " account.");
         }
-        while(amount > 0) {
-            double currentAmount = cash.peek().getAmount();
-            if (currentAmount > amount) {
-                currentAmount -= amount;
-                amount -= amount;
+        while(amount.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal currentAmount = cash.peek().getAmount();
+            if (currentAmount.compareTo(amount) > 0) {
+                currentAmount = currentAmount.subtract(amount);
+                amount = BigDecimal.ZERO;
                 cash.peek().setAmount(currentAmount);
             } else {
-                amount -= currentAmount;
+                amount = amount.subtract(currentAmount);
                 cash.poll();
             }
         }
     }
 
-    public double currencyAmount(String currency) {
+    public BigDecimal currencyAmount(String currency) {
         Queue<Chunk> cash = currencies.get(currency);
-        double amount = 0.0;
+        BigDecimal amount = BigDecimal.ZERO;
         if (cash == null) {
-            return 0.0;
+            return BigDecimal.ZERO;
         }
         for (Chunk each: cash) {
-            amount += each.getAmount();
+            amount = amount.add(each.amount);
         }
-        return amount;
+        return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
-    public double assetAmount(String asset) {
+    public BigDecimal assetAmount(String asset) {
         Queue<Chunk> stocks = assets.get(asset);
-        double amount = 0.0;
+        BigDecimal amount = BigDecimal.ZERO;
         if (stocks == null) {
-            return 0.0;
+            return amount;
         }
         for (Chunk each: stocks) {
-            amount += each.getAmount();
+            amount = amount.add(each.getAmount());
         }
-        return amount;
+        return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
-    public double amountForCash(String ticker, double cashAmount) {
-        double price = exchangeService.getPrice(ticker);
-        return Math.floor(cashAmount / (price * (1 + brokerCommission * 0.01)));
+    public BigDecimal amountForCash(String ticker, BigDecimal cashAmount) {
+        BigDecimal price = exchangeService.getPrice(ticker);
+        BigDecimal priceCoefficient = new BigDecimal(brokerCommission)
+                .multiply(new BigDecimal("0.01"))
+                .add(BigDecimal.ONE);
+        return cashAmount.divide(price.multiply(priceCoefficient), 0, RoundingMode.FLOOR);
     }
 
     public static class Chunk {
-        private double price;
-        private double amount;
+        private BigDecimal price;
+        private BigDecimal amount;
         private Date date;
 
-        public Chunk(double price, double amount, Date date) {
+        public Chunk(BigDecimal price, BigDecimal amount, Date date) {
             this.price = price;
             this.amount = amount;
             this.date = date;
         }
 
-        public double getPrice() {
+        public BigDecimal getPrice() {
             return price;
         }
 
-        public void setPrice(double price) {
+        public void setPrice(BigDecimal price) {
             this.price = price;
         }
 
-        public double getAmount() {
+        public BigDecimal getAmount() {
             return amount;
         }
 
-        public void setAmount(double amount) {
+        public void setAmount(BigDecimal amount) {
             this.amount = amount;
         }
 

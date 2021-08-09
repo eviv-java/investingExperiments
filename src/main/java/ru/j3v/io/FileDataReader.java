@@ -3,6 +3,7 @@ package ru.j3v.io;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -19,16 +20,16 @@ public class FileDataReader implements DataReader {
     private NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
 
 
-    public TreeMap<Date, Double> readStocks() {
+    public TreeMap<Date, BigDecimal> readStocks() {
         List<String> lines = readFile("spxMonthly1913-2021.txt");
-        TreeMap<Date, Double> result = new TreeMap<>();
+        TreeMap<Date, BigDecimal> result = new TreeMap<>();
         for (String line: lines) {
             String[] parts = line.split("\t");
             Date date;
-            Double price;
+            BigDecimal price;
             try {
                 date = dateFormat.parse(parts[0]);
-                price = new Double(numberFormat.parse(parts[1]).toString());
+                price = new BigDecimal(numberFormat.parse(parts[1]).toString());
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -38,19 +39,19 @@ public class FileDataReader implements DataReader {
         return result;
     }
 
-    public TreeMap<Date, Double> readInfl() {
+    public TreeMap<Date, BigDecimal> readInfl() {
         List<String> lines = readFile("cpiMonthly1913-2021.txt");
-        TreeMap<Date, Double> result = new TreeMap<>();
+        TreeMap<Date, BigDecimal> result = new TreeMap<>();
         for (String line: lines) {
             String[] parts = line.split("\t");
             String year = parts[0];
             for (int month = 1; month <=12; month++) {
                 if (parts[month].length() > 1) {
                     Date date;
-                    Double price;
+                    BigDecimal price;
                     try {
                         date = dateMonthNumFormat.parse("" + month + " 01, " + year);
-                        price = new Double(numberFormat.parse(parts[month]).toString());
+                        price = new BigDecimal(numberFormat.parse(parts[month]).toString());
                     } catch (Exception e) {
                         e.printStackTrace();
                         return null;
