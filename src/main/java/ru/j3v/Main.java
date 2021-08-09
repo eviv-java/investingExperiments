@@ -35,14 +35,16 @@ public class Main {
         ba.inputCash("USD", 1000.0);
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("Buy 10 lots of SPX...");
-        if (es.assetsSet().contains("SPX")) {
-            ba.buyAsset("SPX", 10.0);
-        }
+        ba.buyAsset("SPX", 10.0);
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("SPX amount: " + ba.assetAmount("SPX"));
-
-        ts.passMonths(35);
-        ba.sellAsset("SPX", 10.0);
+        for (int i = 0; i < 50; i++) {
+            System.out.println(ts.getCurrentDate());
+            ba.inputCash("USD", 100.0);
+            ba.buyAsset("SPX", ba.amountForCash("SPX", ba.currencyAmount("USD")));
+            ts.passMonths(1);
+        }
+        ba.sellAsset("SPX", ba.assetAmount("SPX"));
         System.out.println("USD amount: " + ba.currencyAmount("USD"));
         System.out.println("SPX amount: " + ba.assetAmount("SPX"));
 
