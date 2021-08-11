@@ -13,6 +13,7 @@ public class ExchangeService {
     private TimeService timeService;
 
     private Map<String, Map<Date, BigDecimal>> assetsPrices;
+    private Map<Date, BigDecimal> inflation;
     private Map<String, Map<Date, BigDecimal>> currencyPrices;
     private Map<String, String> assetCurrency;
 
@@ -21,6 +22,7 @@ public class ExchangeService {
         assetsPrices = new HashMap<>();
         DataReader dr = new FileDataReader();
         assetsPrices.put("SPX", dr.readStocks());
+        inflation = dr.readInfl();
         assetCurrency = new HashMap<>();
         assetCurrency.put("SPX", "USD");
     }
@@ -32,6 +34,11 @@ public class ExchangeService {
     public BigDecimal getPrice(String asset) {
         Date date = timeService.getCurrentDate();
         return assetsPrices.get(asset).get(date);
+    }
+
+    public BigDecimal getInflation() {
+        Date date = timeService.getCurrentDate();
+        return inflation.get(date);
     }
 
     public Set<String> assetsSet() {

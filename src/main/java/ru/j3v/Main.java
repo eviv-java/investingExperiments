@@ -11,6 +11,7 @@ import org.math.plot.Plot2DPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -30,25 +31,43 @@ public class Main {
         BrokerAccount ba = (BrokerAccount)context.getBean("brokerAccount");
         ExchangeService es = (ExchangeService)context.getBean("exchangeService");
         TimeService ts = (TimeService)context.getBean("timeService");
-        System.out.println("USD amount: " + ba.currencyAmount("USD"));
-        System.out.println("SPX amount: " + ba.assetAmount("SPX"));
-        System.out.println("Input $1000...");
-        ba.inputCash("USD", new BigDecimal(1000));
-        System.out.println("USD amount: " + ba.currencyAmount("USD"));
-        System.out.println("Buy 10 lots of SPX...");
-        ba.buyAsset("SPX", new BigDecimal(10));
-        System.out.println("USD amount: " + ba.currencyAmount("USD"));
-        System.out.println("SPX amount: " + ba.assetAmount("SPX"));
-        for (int i = 0; i < 50; i++) {
-            System.out.println(ts.getCurrentDate());
-            ba.inputCash("USD", new BigDecimal(100));
-            ba.buyAsset("SPX", ba.amountForCash("SPX", ba.currencyAmount("USD")));
-            ts.passMonths(1);
-        }
-        ba.sellAsset("SPX", ba.assetAmount("SPX"));
-        System.out.println("USD amount: " + ba.currencyAmount("USD"));
-        System.out.println("SPX amount: " + ba.assetAmount("SPX"));
 
+        int year = 24;
+        LocalDate limitDate = new Date(2018, 01, 01).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        limitDate = limitDate.minusYears(year);
+
+        while (ts.getCurrentDate().before(Date.from(limitDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
+            Date startDate = ts.getCurrentDate();
+            ba.clear();
+
+            BigDecimal totalInput = BigDecimal.ZERO;
+
+            for (int i = 0; i < 12 * year; i++) {
+                BigDecimal inputAmount = es.getInflation().multiply(BigDecimal.TEN);
+                ba.inputCash("USD", inputAmount);
+                totalInput = totalInput.add(inputAmount);
+                BigDecimal amountSpx = ba.amountForCash("SPX", ba.currencyAmount("USD"));
+                ba.buyAsset("SPX", amountSpx);
+                ts.passMonths(1);
+            }
+            System.out.println("\n");
+            System.out.println("*****************************");
+            System.out.println("Started in " + startDate);
+            System.out.println("Put " + 12 * year * 10 + " standard buckets of food");
+            System.out.println("Now it is " + ts.getCurrentDate());
+            BigDecimal portfolioPrice = ba.assetAmount("SPX").multiply(es.getPrice("SPX")).add(ba.currencyAmount("USD"));
+            System.out.println("Totally input $" + totalInput);
+            System.out.println("Portfolio costs $" + portfolioPrice);
+            BigDecimal resultWithInflation = portfolioPrice.divide(es.getInflation(), 0, RoundingMode.FLOOR);
+            System.out.println("You can buy " + resultWithInflation + " standard buckets of food");
+            System.out.println("Coefficient is " + resultWithInflation.divide(new BigDecimal(12 * year * 10), 2, RoundingMode.FLOOR));
+            System.out.println("*****************************");
+            System.out.println("\n");
+
+            ts.setCurrentDate(startDate);
+            ts.passMonths(1);
+
+        }
     }
 
 //    private static void drawGraphics() {

@@ -71,10 +71,6 @@ public class FileDataReader implements DataReader {
         if (resource == null) {
             throw new IllegalArgumentException("file not found! " + filename);
         } else {
-
-            // failed if files have whitespaces or special characters
-            //return new File(resource.getFile());
-
             try {
                 file = new File(resource.toURI());
                 return Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);

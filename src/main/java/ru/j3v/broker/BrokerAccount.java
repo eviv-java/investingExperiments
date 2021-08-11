@@ -55,8 +55,8 @@ public class BrokerAccount {
                     assets.put(asset, assetAccount);
                 }
                 assetAccount.add(new Chunk(price, amount, timeService.getCurrentDate()));
-                System.out.println("Bought " + amount + " " + asset + " for " + cost + " " + currency);
-                System.out.println("Commission: " + commission);
+                //System.out.println("Bought " + amount + " " + asset + " for " + cost + " " + currency);
+                //System.out.println("Commission: " + commission);
             } catch (Exception e) {
                 throw new NoCashException(e);
             }
@@ -91,9 +91,9 @@ public class BrokerAccount {
                     stocks.poll();
                 }
             }
-            System.out.println("Sold " + initialAmount + " stocks of " + asset + " for " + cashIncome + " " + currency);
-            System.out.println("Taxes: " + taxes);
-            System.out.println("Commission: " + commission);
+            //System.out.println("Sold " + initialAmount + " stocks of " + asset + " for " + cashIncome + " " + currency);
+            //System.out.println("Taxes: " + taxes);
+            //System.out.println("Commission: " + commission);
             currencies.get(currency).add(new Chunk(BigDecimal.ONE, cashIncome.subtract(taxes).subtract(commission), new Date()));
         }
     }
@@ -125,7 +125,7 @@ public class BrokerAccount {
             currencies.put(currency, cash);
         }
         cash.add(new Chunk(BigDecimal.ONE, amount, timeService.getCurrentDate()));
-        System.out.println("Added " + amount + " " + currency);
+        //System.out.println("Added " + amount + " " + currency);
     }
 
     private void reduceCurrency(String currency, BigDecimal amount) throws NoCashException{
@@ -176,6 +176,11 @@ public class BrokerAccount {
                 .multiply(new BigDecimal("0.01"))
                 .add(BigDecimal.ONE);
         return cashAmount.divide(price.multiply(priceCoefficient), 0, RoundingMode.FLOOR);
+    }
+
+    public void clear() {
+        assets = new HashMap<>();
+        currencies = new HashMap<>();
     }
 
     public static class Chunk {
