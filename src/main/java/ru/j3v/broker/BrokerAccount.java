@@ -1,5 +1,7 @@
 package ru.j3v.broker;
 
+import com.sun.org.slf4j.internal.Logger;
+import com.sun.org.slf4j.internal.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.j3v.io.ParamsProvider;
@@ -12,6 +14,8 @@ import java.util.*;
 
 @Service
 public class BrokerAccount {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAccount.class);
 
     private ExchangeService exchangeService;
 
@@ -55,8 +59,8 @@ public class BrokerAccount {
                     assets.put(asset, assetAccount);
                 }
                 assetAccount.add(new Chunk(price, amount, timeService.getCurrentDate()));
-                //System.out.println("Bought " + amount + " " + asset + " for " + cost + " " + currency);
-                //System.out.println("Commission: " + commission);
+                LOGGER.debug("Bought " + amount + " " + asset + " for " + cost + " " + currency);
+                LOGGER.debug("Commission: " + commission);
             } catch (Exception e) {
                 throw new NoCashException(e);
             }
@@ -91,9 +95,9 @@ public class BrokerAccount {
                     stocks.poll();
                 }
             }
-            //System.out.println("Sold " + initialAmount + " stocks of " + asset + " for " + cashIncome + " " + currency);
-            //System.out.println("Taxes: " + taxes);
-            //System.out.println("Commission: " + commission);
+            LOGGER.debug("Sold " + initialAmount + " stocks of " + asset + " for " + cashIncome + " " + currency);
+            LOGGER.debug("Taxes: " + taxes);
+            LOGGER.debug("Commission: " + commission);
             currencies.get(currency).add(new Chunk(BigDecimal.ONE, cashIncome.subtract(taxes).subtract(commission), new Date()));
         }
     }
@@ -125,7 +129,7 @@ public class BrokerAccount {
             currencies.put(currency, cash);
         }
         cash.add(new Chunk(BigDecimal.ONE, amount, timeService.getCurrentDate()));
-        //System.out.println("Added " + amount + " " + currency);
+        LOGGER.debug("Added " + amount + " " + currency);
     }
 
     private void reduceCurrency(String currency, BigDecimal amount) throws NoCashException{
