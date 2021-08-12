@@ -179,7 +179,7 @@ public class BrokerAccount {
         BigDecimal priceCoefficient = new BigDecimal(brokerCommission)
                 .multiply(new BigDecimal("0.01"))
                 .add(BigDecimal.ONE);
-        return cashAmount.divide(price.multiply(priceCoefficient), 0, RoundingMode.FLOOR);
+        return cashAmount.divide(price.multiply(priceCoefficient), 2, RoundingMode.FLOOR);
     }
 
     public void clear() {
