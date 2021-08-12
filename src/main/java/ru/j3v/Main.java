@@ -1,7 +1,7 @@
 package ru.j3v;
 
-import com.sun.org.slf4j.internal.Logger;
-import com.sun.org.slf4j.internal.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.j3v.broker.BrokerAccount;
 import ru.j3v.broker.ExchangeService;
 import ru.j3v.broker.NoCashException;
@@ -38,7 +38,7 @@ public class Main {
         TimeService ts = (TimeService)context.getBean("timeService");
 
         int year = 24;
-        LocalDate limitDate = new Date(2018, 01, 01).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate limitDate = new Date(121, 01, 01).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         limitDate = limitDate.minusYears(year);
 
         while (ts.getCurrentDate().before(Date.from(limitDate.atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
@@ -55,19 +55,19 @@ public class Main {
                 ba.buyAsset("SPX", amountSpx);
                 ts.passMonths(1);
             }
-            LOGGER.warn("\n");
-            LOGGER.warn("*****************************");
-            LOGGER.warn("Started in " + startDate);
-            LOGGER.warn("Put " + 12 * year * 10 + " standard buckets of food");
-            LOGGER.warn("Now it is " + ts.getCurrentDate());
+            LOGGER.info("\n");
+            LOGGER.info("*****************************");
+            LOGGER.info("Started in " + startDate);
+            LOGGER.info("Put " + 12 * year * 10 + " standard buckets of food");
+            LOGGER.info("Now it is " + ts.getCurrentDate());
             BigDecimal portfolioPrice = ba.assetAmount("SPX").multiply(es.getPrice("SPX")).add(ba.currencyAmount("USD"));
-            LOGGER.warn("Totally input $" + totalInput);
-            LOGGER.warn("Portfolio costs $" + portfolioPrice);
+            LOGGER.info("Totally input $" + totalInput);
+            LOGGER.info("Portfolio costs $" + portfolioPrice);
             BigDecimal resultWithInflation = portfolioPrice.divide(es.getInflation(), 0, RoundingMode.FLOOR);
-            LOGGER.warn("You can buy " + resultWithInflation + " standard buckets of food");
-            LOGGER.warn("Coefficient is " + resultWithInflation.divide(new BigDecimal(12 * year * 10), 2, RoundingMode.FLOOR));
-            LOGGER.warn("*****************************");
-            LOGGER.warn("\n");
+            LOGGER.info("You can buy " + resultWithInflation + " standard buckets of food");
+            LOGGER.info("Coefficient is " + resultWithInflation.divide(new BigDecimal(12 * year * 10), 2, RoundingMode.FLOOR));
+            LOGGER.info("*****************************");
+            LOGGER.info("\n");
 
             ts.setCurrentDate(startDate);
             ts.passMonths(1);
