@@ -7,4 +7,5 @@ import java.util.TreeMap;
 public interface DataReader {
     TreeMap<Date, BigDecimal> readStocks();
     TreeMap<Date, BigDecimal> readInfl();
+    TreeMap<Date, BigDecimal> read3MBonds();
 }

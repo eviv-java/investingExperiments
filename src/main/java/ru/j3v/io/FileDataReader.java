@@ -15,7 +15,8 @@ import java.util.*;
 @Component
 public class FileDataReader implements DataReader {
 
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.US);
+    private SimpleDateFormat spxDateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.US);
+    private SimpleDateFormat bondsDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private SimpleDateFormat dateMonthNumFormat = new SimpleDateFormat("M dd, yyyy", Locale.US);
     private NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
 
@@ -28,7 +29,7 @@ public class FileDataReader implements DataReader {
             Date date;
             BigDecimal price;
             try {
-                date = dateFormat.parse(parts[0]);
+                date = spxDateFormat.parse(parts[0]);
                 price = new BigDecimal(numberFormat.parse(parts[1]).toString());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -59,6 +60,26 @@ public class FileDataReader implements DataReader {
                     result.put(date, price);
                 }
             }
+        }
+        return result;
+    }
+
+    @Override
+    public TreeMap<Date, BigDecimal> read3MBonds() {
+        List<String> lines = readFile("3M_bills.txt");
+        TreeMap<Date, BigDecimal> result = new TreeMap<>();
+        for (String line: lines) {
+            String[] parts = line.split("\t");
+            Date date;
+            BigDecimal price;
+            try {
+                date = bondsDateFormat.parse(parts[0]);
+                price = new BigDecimal(numberFormat.parse(parts[1]).toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+            result.put(date, price);
         }
         return result;
     }
