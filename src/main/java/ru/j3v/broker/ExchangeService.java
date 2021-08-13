@@ -5,6 +5,8 @@ import ru.j3v.io.FileDataReader;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -16,6 +18,7 @@ public class ExchangeService {
     private Map<Date, BigDecimal> inflation;
     private Map<String, Map<Date, BigDecimal>> currencyPrices;
     private Map<String, String> assetCurrency;
+    private Map<Date, BigDecimal> bonds3m;
 
     public ExchangeService(TimeService timeService) {
         this.timeService = timeService;
@@ -25,6 +28,7 @@ public class ExchangeService {
         inflation = dr.readInfl();
         assetCurrency = new HashMap<>();
         assetCurrency.put("SPX", "USD");
+        bonds3m = dr.read3MBonds();
     }
 
     public String getCurrency(String asset) {
@@ -43,5 +47,21 @@ public class ExchangeService {
 
     public Set<String> assetsSet() {
         return assetsPrices.keySet();
+    }
+
+    public BigDecimal getBondsYield() {
+        Date date = timeService.getCurrentDate();
+        BigDecimal yield = null;
+        do {
+            yield = bonds3m.get(date);
+            date = dayBack(date);
+        } while (yield == null);
+        return yield;
+    }
+
+    private Date dayBack(Date date) {
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return Date.from(localDate.minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+
     }
 }
